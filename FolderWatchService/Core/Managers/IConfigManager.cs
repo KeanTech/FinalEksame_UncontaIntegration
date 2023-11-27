@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Alaska.Library.Models.Service;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -19,5 +20,11 @@ namespace FolderWatchService.Core.Managers
         /// Used to Read the App.config file ment to be stored somewhere
         /// </summary>
         void ReadConfigurations();
+
+        /// <summary>
+        /// Used to get the information for login into UnicontaAPI
+        /// </summary>
+        /// <returns></returns>
+        LoginInfo GetLoginInfo();
     }
 }

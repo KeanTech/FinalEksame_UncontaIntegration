@@ -1,20 +1,18 @@
-﻿using Alaska.Library.Models.Uniconta.Userdefined;
+﻿using Alaska.Library.Models.Service;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.IO;
 using System.Threading.Tasks;
 using Uniconta.API.System;
+using Uniconta.ClientTools.DataModel;
 using Uniconta.Common;
-using Uniconta.DataModel;
 
 namespace FolderWatchService.Services
 {
     public interface IUnicontaAPIService : IDisposable
     {
-        Task<CrudAPI> Login();
-        Task<ErrorCodes> Create(ScannerFile scannerFile, List<ScannerData> scannerData);
-        Task<ErrorCodes> Update(ScannerFile scannerFile, List<ScannerData> scannerData);
-        Task<List<InvItem>> GetInventory();
+        Task<CrudAPI> Login(LoginInfo loginInfo);
+        Task<ErrorCodes> HandleFolderCreatedEvent(string filePath, string fileName);
+        Task<InvItemClient[]> GetInventory();
+        CrudAPI Api { get; }
     }
 }

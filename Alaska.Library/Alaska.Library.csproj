@@ -51,11 +51,11 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Core\Enums\ConfigKey.cs" />
     <Compile Include="Core\Factories\Factory.cs" />
     <Compile Include="Core\Factories\IEntity.cs" />
     <Compile Include="Core\Factories\IFactory.cs" />
-    <Compile Include="Models\LogInfo.cs" />
-    <Compile Include="Models\LogInfoLine.cs" />
+    <Compile Include="Models\Service\LoginInfo.cs" />
     <Compile Include="Models\Uniconta\Userdefined\ScannerData.cs" />
     <Compile Include="Models\Uniconta\Userdefined\ScannerFile.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

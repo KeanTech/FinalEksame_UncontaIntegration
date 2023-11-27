@@ -9,7 +9,9 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 using Uniconta.ClientTools.DataModel;
 using Uniconta.Common;
 
@@ -17,9 +19,7 @@ namespace FolderWatchService.Core.Handlers
 {
     public class ErrorHandler
     {
-        private static string _path;
-        public static void SetPathForErrorLog(string path) => _path = path;
-
+        private static string _path = AppDomain.CurrentDomain.BaseDirectory;
         /// <summary>
         /// Creates a file called error.txt containing the information about the Exception
         /// </summary>
@@ -28,10 +28,13 @@ namespace FolderWatchService.Core.Handlers
         /// <returns></returns>
         public static async Task WriteError(Exception exception, ErrorCodes errorCode = ErrorCodes.Succes)
         {
-            var logFileName = "error.txt";
+            string fullPath = Path.Combine(_path, $"Errors\\{DateTime.Now.ToString("dd-MM-yy")}_error.txt");
+
+            if (Directory.Exists(_path + "Errors") == false)
+                Directory.CreateDirectory(_path + "Errors");
 
             // Makes a using here to make sure that the stream gets disposed correctly after writing to the disk
-            using (StreamWriter writer = new StreamWriter(_path + logFileName, true))
+            using (StreamWriter writer = new StreamWriter(fullPath, true))
             {
                 await writer.WriteLineAsync($"Error: at {DateTime.Now}");
                 await writer.WriteLineAsync($"Errormessage: {exception.Message}");
@@ -41,6 +44,11 @@ namespace FolderWatchService.Core.Handlers
 
                 await writer.WriteLineAsync($"-------------Record Done-------------");
             }
+        }
+
+        public static void ShowErrorMessage(string message) 
+        {
+            MessageBox.Show("Error occurred in FolderService:\n" + message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,11 +14,15 @@ namespace Alaska.Library.Models.Uniconta.Userdefined
         public override int UserTableId { get { return 81790; } }
         public override int CompanyId { get { return 80730; } }
 
-        public static ScannerFile Factory(Company company) 
+        public static ScannerFile Factory(Company company, string name, string filePath, string production, string status) 
         {
             ScannerFile scannerFile = new ScannerFile();
             scannerFile.SetMaster(company);
-
+            scannerFile.KeyName = name;
+            scannerFile.FilePath = filePath;
+            scannerFile.Created = DateTime.Now;
+            scannerFile.Production = production;
+            scannerFile.Status = status;
             return scannerFile;
         }
 

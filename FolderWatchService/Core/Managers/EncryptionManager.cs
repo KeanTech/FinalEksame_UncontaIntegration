@@ -1,4 +1,5 @@
-﻿using Alaska.Library.Models;
+﻿using Alaska.Library.Core.Enums;
+using Alaska.Library.Models;
 using FromXSDFile.OIOUBL.ExportImport;
 using System;
 using System.Collections.Generic;
@@ -13,7 +14,7 @@ namespace FolderWatchService.Core.Managers
 {
     public class EncryptionManager
     {
-        private readonly string[] _keys = { "ApiKey", "UserName", "Password", "ENCKey" };
+        private readonly string[] _keys = { ConfigKey.ApiKey.ToString(), ConfigKey.Username.ToString(), ConfigKey.Password.ToString(), ConfigKey.ENCKey.ToString() };
         private static string _key;
 
         /// <summary>

@@ -14,7 +14,7 @@ namespace Alaska.Library.Models.Uniconta.Userdefined
         public override int CompanyId { get { return 80730; } }
         public override int MasterTableId { get { return 81790; } }
 
-        public ScannerData Factory(ScannerFile scannerFile) 
+        public static ScannerData Factory(ScannerFile scannerFile) 
         {
             ScannerData data = new ScannerData();
             data.SetMaster(scannerFile);
@@ -51,11 +51,12 @@ namespace Alaska.Library.Models.Uniconta.Userdefined
         }
 
         [Display(Name = "Valideret")]
-        public string Validated
+        public bool Validated
         {
-            get { return this.GetUserFieldString("Validated"); }
-            set { this.SetUserFieldString("Validated", value); NotifyPropertyChanged("Validated"); }
+            get { return this.GetUserFieldBoolean("Validated"); }
+            set { this.SetUserFieldBoolean("Validated", value); NotifyPropertyChanged("Validated"); }
         }
+
 
     }
 }
