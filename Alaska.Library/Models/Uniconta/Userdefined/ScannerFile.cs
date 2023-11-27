@@ -14,14 +14,13 @@ namespace Alaska.Library.Models.Uniconta.Userdefined
         public override int UserTableId { get { return 81790; } }
         public override int CompanyId { get { return 80730; } }
 
-        public static ScannerFile Factory(Company company, string name, string filePath, string production, string status) 
+        public static ScannerFile Factory(Company company, string name, string filePath, string status) 
         {
             ScannerFile scannerFile = new ScannerFile();
             scannerFile.SetMaster(company);
             scannerFile.KeyName = name;
             scannerFile.FilePath = filePath;
             scannerFile.Created = DateTime.Now;
-            scannerFile.Production = production;
             scannerFile.Status = status;
             return scannerFile;
         }
@@ -38,13 +37,6 @@ namespace Alaska.Library.Models.Uniconta.Userdefined
         {
             get { return this.GetUserFieldDateTime("Created"); }
             set { this.SetUserFieldDateTime("Created", value); NotifyPropertyChanged("Created"); }
-        }
-
-        [Display(Name = "@Production")]
-        public string Production
-        {
-            get { return this.GetUserFieldString("Production"); }
-            set { this.SetUserFieldString("Production", value); NotifyPropertyChanged("Production"); }
         }
 
         [Display(Name = "Status")]

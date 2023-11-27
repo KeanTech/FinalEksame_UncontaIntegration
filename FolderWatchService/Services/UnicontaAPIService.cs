@@ -42,7 +42,7 @@ namespace FolderWatchService.Services
         public async Task<ErrorCodes> HandleFolderCreatedEvent(string filePath, string fileName)
         {
             // Uses the static factory to create ScannerFile object
-            ScannerFile scannerFile = ScannerFile.Factory(_api.CompanyEntity, fileName, filePath, "Not Created", "Uploaded");
+            ScannerFile scannerFile = ScannerFile.Factory(_api.CompanyEntity, fileName, filePath, "Uploaded");
             // Insert the ScannerFile
             var insertResult = await _api.Insert(scannerFile);
 

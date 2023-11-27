@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Uniconta.Common;
 using Uniconta.DataModel;
 
 namespace Alaska.Library.Models.Uniconta.Userdefined
@@ -57,6 +58,13 @@ namespace Alaska.Library.Models.Uniconta.Userdefined
             set { this.SetUserFieldBoolean("Validated", value); NotifyPropertyChanged("Validated"); }
         }
 
+        [ForeignKeyAttribute(ForeignKeyTable = typeof(ProductionOrder))]
+        [Display(Name = "Produktionsnummer")]
+        public string ProductionNumber
+        {
+            get { return this.GetUserFieldString("ProductionNumber"); }
+            set { this.SetUserFieldString("ProductionNumber", value); NotifyPropertyChanged("ProductionNumber"); }
+        }
 
     }
 }

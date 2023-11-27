@@ -89,7 +89,7 @@ namespace FolderWatchService.Services
             _unicontaAPIService.HandleFolderCreatedEvent(pendingPath, newFileName).Wait();
 
             if (_createProductions)
-                _productionManager.HandleCreateProduction(_unicontaAPIService.Api, newFileName).ConfigureAwait(false);
+                _productionManager.HandleCreateProduction(_unicontaAPIService.Api, newFileName).Wait();
 
             newFileName = $"{orgFileName ?? "stykliste"}{_fileSuffix}";
             var newFilePath = _folderPath + _FilesReadFolder + "\\" + newFileName;

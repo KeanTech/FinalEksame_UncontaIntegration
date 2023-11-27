@@ -1,6 +1,8 @@
 ﻿using Alaska.Library.Models.Uniconta.Userdefined;
 using FolderWatchService.Core.Handlers;
 using FolderWatchService.Services;
+using FromXSDFile.OIOUBL.ExportImport;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -44,7 +46,7 @@ namespace FolderWatchService.Core.Managers
             foreach (ScannerData data in scannerData)
             {
                 var item = Items.FirstOrDefault(x => x.Item == data.ItemNumber).Item;
-                data.Status = "Afsluttet";
+                data.Status = "Initiated";
                 data.Validated = true;
                 var production = GenerateProduction(api, productions, data, item, productionGroup);
                 productions.Add(production);
@@ -53,25 +55,35 @@ namespace FolderWatchService.Core.Managers
             if (productions.Count > 0)
             {
                 var insertResult = await api.Insert(productions);
+
                 if (insertResult != ErrorCodes.Succes)
                 {
-                    await CreateProductions(api, productions, scannerData);
+                    await CreateProductions(api, productions, scannerData, scannerFile);
                 }
+                else
+                    for (int i = 0; i < productions.Count(); i++)
+                    {
+                        scannerData[i].ProductionNumber = productions[i].ProductionNumber.ToString();
+                    }
             }
 
             var prodApi = new ProductionAPI(api);
-            
-            var task = CreateProductionLines(prodApi, productions).ConfigureAwait(false);
 
-            scannerFile.Status = "Afsluttet";
-            scannerFile.Production = "";
-            productions.ForEach(x => { scannerFile.Production += x.ProductionNumber + " "; });
-            
+            await CreateProductionLines(prodApi, productions, scannerData, scannerFile);
+
+            var postResult = await ReportAsFinished(prodApi, productions, scannerFile, scannerData);
+
+            if(postResult != ErrorCodes.Succes)
+
+
+            if (string.IsNullOrEmpty(scannerFile.Status))
+                scannerFile.Status = "Afsluttet";
+
             var updateResult = await api.Update(scannerFile);
 
             if (updateResult != ErrorCodes.Succes)
             {
-                task = ErrorHandler.WriteError(new UnicontaException("Error while updating ScannerFile"), updateResult).ConfigureAwait(false);
+                await ErrorHandler.WriteError(new UnicontaException("Error while updating ScannerFile"), updateResult).ConfigureAwait(false);
                 return updateResult;
             }
 
@@ -79,7 +91,7 @@ namespace FolderWatchService.Core.Managers
 
             if (updateResult != ErrorCodes.Succes)
             {
-                task = ErrorHandler.WriteError(new UnicontaException("Error while updating ScannerData"), updateResult).ConfigureAwait(false);
+                await ErrorHandler.WriteError(new UnicontaException("Error while updating ScannerData"), updateResult).ConfigureAwait(false);
                 return updateResult;
             }
 
@@ -98,9 +110,8 @@ namespace FolderWatchService.Core.Managers
             return productionOrder;
         }
 
-        private async Task<ErrorCodes> CreateProductions(CrudAPI api, List<ProductionOrderClient> productions, ScannerData[] scannerData)
+        private async Task<ErrorCodes> CreateProductions(CrudAPI api, List<ProductionOrderClient> productions, ScannerData[] scannerData, ScannerFile scannerFile)
         {
-            bool updateScannerData = false;
             int count = 0;
 
             foreach (var item in productions)
@@ -108,25 +119,62 @@ namespace FolderWatchService.Core.Managers
                 var insertResult = await api.Insert(item);
                 if (insertResult != ErrorCodes.Succes)
                 {
-                    scannerData[count].Status = $"Api error {insertResult}";
+                    scannerData[count].Status = $"Error {insertResult}";
+                    scannerFile.Status = "Error";
                     var task = ErrorHandler.WriteError(new UnicontaException("Error while trying to insert Production"), insertResult).ConfigureAwait(false);
-                    updateScannerData = true;
+                    continue;
                 }
+
+                scannerData[count].ProductionNumber = item.ProductionNumber.ToString();
             }
 
             return ErrorCodes.Succes;
         }
 
-        private async Task CreateProductionLines(ProductionAPI api, List<ProductionOrderClient> productions)
+        private async Task CreateProductionLines(ProductionAPI api, List<ProductionOrderClient> productions, ScannerData[] scannerData, ScannerFile scannerFile)
         {
+            int count = 0;
+
             foreach (ProductionOrderClient production in productions)
             {
                 var creationResult = await api.CreateProductionLines(production, StorageRegister.Register);
                 if (creationResult != ErrorCodes.Succes)
                 {
+                    scannerData[count].Status = $"Error: {creationResult}";
+                    scannerFile.Status = "Error";
                     var task = ErrorHandler.WriteError(new UnicontaException("Error while creating productionlines", new UnicontaException($"Failed to create lines for production: {production.ProductionNumber}")), creationResult);
                 }
+
+                count++;
             }
+        }
+
+        private async Task<ErrorCodes> ReportAsFinished(ProductionAPI api, List<ProductionOrderClient> productions, ScannerFile scannerFile, ScannerData[] scannerData)
+        {
+            ErrorCodes lastError = ErrorCodes.Succes;
+            foreach (ProductionOrderClient production in productions)
+            {
+                var relatedScannerData = scannerData.FirstOrDefault(x => x.ProductionNumber == production.ProductionNumber.ToString());
+                try
+                {
+                    var result = await api.ReportAsFinished(production, DateTime.Now, "", "", "", 0, false, null, production.NoLines, "NR");
+                   
+                    if (result.Err != ErrorCodes.Succes && result.JournalPostedlId == 0)
+                    {
+                        lastError = result.Err;
+                        relatedScannerData.Status = $"Error: {result.Err}";
+                        scannerFile.Status = "Error";
+                        var task = ErrorHandler.WriteError(new UnicontaException("Error while reporting as finished", new UnicontaException($"Failed post production: {production.ProductionNumber}")), result.Err);
+                        continue;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    await ErrorHandler.WriteError(new UnicontaException("Exception while reporting as finished", new Exception("Errormessage: " + ex.Message)));
+                }
+            }
+
+            return lastError;
         }
 
     }
