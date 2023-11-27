@@ -1,5 +1,6 @@
 ﻿using Alaska.Library.Models.Service;
 using Alaska.Library.Models.Uniconta.Userdefined;
+using Alaska.Library.Models.Uniconta.Inventory;
 using FolderWatchService.Core.Handlers;
 using FolderWatchService.Core.Helpers;
 using FolderWatchService.Core.Managers;
@@ -105,7 +106,7 @@ namespace FolderWatchService.Services
                 // splits the line into an array
                 string[] lineData = line.Split(';');
                 // Verify that the item exist in uniconta
-                var item = inventoryItems.FirstOrDefault(x => x._Item == lineData[0]);
+                var item = inventoryItems.FirstOrDefault(x => x.GetUserFieldString(nameof(InvItemClientUser.EANPallet)) == lineData[0]);
 
                 ScannerData scannerData = ScannerData.Factory(scannerFile);
 
@@ -115,7 +116,7 @@ namespace FolderWatchService.Services
                 // Else set the item 
                 else
                 {
-                    scannerData.ItemNumber = lineData[0];
+                    scannerData.ItemNumber = item.Item;
                 }
 
                 int qty;
