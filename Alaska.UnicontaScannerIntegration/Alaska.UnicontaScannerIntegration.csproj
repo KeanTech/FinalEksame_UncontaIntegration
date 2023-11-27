@@ -45,6 +45,8 @@
     <Reference Include="DevExpress.Xpf.Core.v21.2, Version=21.2.7.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a" />
     <Reference Include="DevExpress.Xpf.Grid.v21.2, Version=21.2.7.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a" />
     <Reference Include="DevExpress.Xpf.Grid.v21.2.Core, Version=21.2.7.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a" />
+    <Reference Include="DevExpress.XtraLayout.v21.2, Version=21.2.7.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a, processorArchitecture=MSIL" />
+    <Reference Include="DevExpress.XtraReports.v21.2, Version=21.2.7.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a" />
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.13.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
@@ -69,15 +71,12 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>Libs\UnicontaPages.dll</HintPath>
     </Reference>
-    <Reference Include="UniFactory.UnicontaPluginBase, Version=91.1.10.2, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\UniFactory.UnicontaPluginBase.91.4.10.2\lib\net47\UniFactory.UnicontaPluginBase.dll</HintPath>
-    </Reference>
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Pages\CorasauDataGridClient.cs" />
-    <Compile Include="Pages\Inventory\InventoryJournalPage.xaml.cs">
-      <DependentUpon>InventoryJournalPage.xaml</DependentUpon>
+    <Compile Include="Pages\Production\ProductionOrdersPage.xaml.cs">
+      <DependentUpon>ProductionOrdersPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -85,14 +84,13 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="DC\API\OIOUBL\Classes to export\Resources\OIOUBL_Invoice_Schematron.xsl" />
-    <Content Include="FodyWeavers.xml" />
     <Content Include="Libs\ClientTools.dll" />
     <Content Include="Libs\UnicontaPages.dll" />
-    <Content Include="Pages\Inventory\InventoryJournalPageRibbon.xml" />
+    <Resource Include="Pages\Production\ProductionOrdersGridRibbon.xml" />
   </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
-    <Page Include="Pages\Inventory\InventoryJournalPage.xaml">
+    <Page Include="Pages\Production\ProductionOrdersPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
