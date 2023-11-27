@@ -10,7 +10,7 @@ namespace FolderWatchService.Services
 {
     public interface IUnicontaAPIService : IDisposable
     {
-        Task<CrudAPI> Login(LoginInfo loginInfo);
+        Task<ErrorCodes> Login(LoginInfo loginInfo);
         Task<ErrorCodes> HandleFolderCreatedEvent(string filePath, string fileName);
         Task<InvItemClient[]> GetInventory();
         CrudAPI Api { get; }
