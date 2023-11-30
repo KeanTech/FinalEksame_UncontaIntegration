@@ -1,23 +1,22 @@
-﻿using Alaska.Library.Models.Service;
-using Alaska.Library.Models.Uniconta.Userdefined;
+﻿using Alaska.Library.Core.Factories;
+using Alaska.Library.Models.Service;
 using Alaska.Library.Models.Uniconta.Inventory;
+using Alaska.Library.Models.Uniconta.Userdefined;
 using FolderWatchService.Core.Handlers;
 using FolderWatchService.Core.Helpers;
-using FolderWatchService.Core.Managers;
-using FromXSDFile.OIOUBL.ExportImport.eDelivery;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Windows.Documents;
+using System.Windows;
+using Uniconta.API.Inventory;
 using Uniconta.API.Service;
 using Uniconta.API.System;
 using Uniconta.ClientTools.DataModel;
 using Uniconta.Common;
 using Uniconta.Common.User;
 using Uniconta.DataModel;
-using static Uniconta.API.System.CrudAPI;
 
 namespace FolderWatchService.Services
 {
@@ -27,11 +26,70 @@ namespace FolderWatchService.Services
     public class UnicontaAPIService : IUnicontaAPIService
     {
         private CrudAPI _api;
+        private readonly IUnicontaFactory _factory;
+
+        public UnicontaAPIService(IUnicontaFactory factory)
+        {
+            _factory = factory;
+        }
+
+        public ProductionAPI CreateProductionApi() => _factory.CreateProductionApi(_api);
 
         /// <summary>
-        /// Public get so we can get access to the api
+        /// Public getter for company
+        /// <para>Used for access purposes and to create Uniconta objects</para>
         /// </summary>
-        public CrudAPI Api { get { return _api; } }
+        public Company Company => _api?.CompanyEntity;
+
+        #region Query methods
+        public async Task<T[]> Query<T>() where T : class, UnicontaBaseEntity, new()
+        {
+            T[] entity = await _api.Query<T>();
+            return entity;
+        }
+
+        public async Task<T[]> Query<T>(List<PropValuePair> filters) where T : class, UnicontaBaseEntity, new()
+        {
+            T[] entity = await _api.Query<T>(filters);
+            return entity;
+        }
+
+        public async Task<T[]> Query<T>(UnicontaBaseEntity master) where T : class, UnicontaBaseEntity, new()
+        {
+            T[] entity = await _api.Query<T>(master);
+            return entity;
+        }
+
+        #endregion
+
+        #region Insert methods
+
+        public async Task<ErrorCodes> Insert(UnicontaBaseEntity entity)
+        {
+            return await _api.Insert(entity);
+        }
+
+        public async Task<ErrorCodes> Insert(IEnumerable<UnicontaBaseEntity> entities)
+        {
+            return await _api.Insert(entities);
+        }
+
+        #endregion
+
+        #region Update methods
+        public async Task<ErrorCodes> Update(UnicontaBaseEntity entity)
+        {
+            return await _api.Update(entity);
+        }
+
+        public async Task<ErrorCodes> Update(IEnumerable<UnicontaBaseEntity> entities)
+        {
+            return await _api.Update(entities);
+        }
+
+        #endregion
+
+        #region HandleFolderEvent
 
         /// <summary>
         /// Used to handle folder event, it sends the data from file to Uniconta
@@ -42,7 +100,15 @@ namespace FolderWatchService.Services
         public async Task<ErrorCodes> HandleFolderCreatedEvent(string filePath, string fileName)
         {
             // Uses the static factory to create ScannerFile object
-            ScannerFile scannerFile = ScannerFile.Factory(_api.CompanyEntity, fileName, filePath, "Uploaded");
+            //ScannerFile scannerFile = ScannerFile.Factory(_api.CompanyEntity, fileName, filePath, "Uploaded");
+
+            ScannerFile scannerFile = _factory.Create<ScannerFile>();
+            scannerFile.SetMaster(_api.CompanyEntity);
+            scannerFile.KeyName = fileName;
+            scannerFile.FilePath = filePath;
+            scannerFile.Created = DateTime.Now;
+            scannerFile.Status = "Initiated";
+
             // Insert the ScannerFile
             var insertResult = await _api.Insert(scannerFile);
 
@@ -79,7 +145,7 @@ namespace FolderWatchService.Services
             }
 
             // Add the file to the ScannerData as an attachment 
-            insertResult = await CreateAttachmentForScannerFile(scannerFile, filePath, fileName);
+            insertResult = await CreateAttachmentFor(scannerFile, filePath, fileName);
 
             // if the insert fails write to log and return the error
             if (insertResult != ErrorCodes.Succes)
@@ -90,6 +156,10 @@ namespace FolderWatchService.Services
 
             return ErrorCodes.Succes;
         }
+
+        #endregion
+
+        #region Create ScannerData
 
         /// <summary>
         /// Creates a <see cref="List{ScannerData}"/> from the fileLines
@@ -108,8 +178,8 @@ namespace FolderWatchService.Services
                 // Verify that the item exist in uniconta
                 var item = inventoryItems.FirstOrDefault(x => x.GetUserFieldString(nameof(InvItemClientUser.EANPallet)) == lineData[0]);
 
-                ScannerData scannerData = ScannerData.Factory(scannerFile);
-
+                ScannerData scannerData = _factory.Create<ScannerData>();
+                scannerData.SetMaster(scannerFile);
                 // If the item does not exist give the line Status does not exist
                 if (item == null)
                     scannerData.Status = $"Item: {lineData[0]} does not exist";
@@ -152,6 +222,8 @@ namespace FolderWatchService.Services
             return data;
         }
 
+        #endregion
+
         /// <summary>
         /// Query the <see cref="InvItemClient"/> 
         /// </summary>
@@ -172,33 +244,48 @@ namespace FolderWatchService.Services
         {
             UnicontaConnection connection = new UnicontaConnection(APITarget.Live);
             Session session = new Session(connection);
+            ErrorCodes loginResponse = ErrorCodes.Succes;
+            UnicontaException exception = new UnicontaException("");
 
-            // Get access to Uniconta Api through the session
-            var loginResponse = await session.LoginAsync(
+            try
+            {
+                // Get access to Uniconta Api through the session
+                loginResponse = await session.LoginAsync(
 
-                LoginId: loginInfo.Username,
-                Password: loginInfo.Password,
-                loginProfile: LoginType.API,
-                AccessIdent: new Guid(loginInfo.ApiKey)
+                    LoginId: loginInfo.Username,
+                    Password: loginInfo.Password,
+                    loginProfile: LoginType.API,
+                    AccessIdent: new Guid(loginInfo.ApiKey)
 
-            );
-
-            // if the login is not successful
-            if (loginResponse != ErrorCodes.Succes)
-            { 
-                throw new ArgumentException("Error while trying to login", new Exception($"Error Code: {loginResponse}"));
+                );
             }
+            catch (UnicontaException ex)
+            {
+                await ErrorHandler.WriteError(ex, loginResponse);
+            }
+            finally
+            { // if the login is not successful
+                if (loginResponse != ErrorCodes.Succes)
+                {
+                    MessageBox.Show($"Uniconta login failed cant start service!\nError Message: {loginResponse}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    await ErrorHandler.WriteError(new UnicontaException($"Uniconta login failed cant start service"), loginResponse);
+                    // Exit with exitcode: ERROR_SERVICE_LOGON_FAILED(1069) https://learn.microsoft.com/en-us/windows/win32/debug/system-error-codes--1000-1299-
+                    Environment.Exit(1069);
+                }
+            }
+
             // Try to get company to see if the user i authenticated
             var companyEntity = await session.GetCompany(loginInfo.CompanyId);
-            
+
             // If company entity is null the the user does not have access to it  
             if (companyEntity == null)
-            { 
+            {
                 throw new ArgumentNullException($"You do not have permission to use company {loginInfo.CompanyId}");
             }
 
             // Sets the internal api
             _api = new CrudAPI(session, companyEntity);
+
 
             return loginResponse;
         }
@@ -218,10 +305,10 @@ namespace FolderWatchService.Services
         /// <param name="fullPath"></param>
         /// <param name="fileName"></param>
         /// <returns></returns>
-        private async Task<ErrorCodes> CreateAttachmentForScannerFile(ScannerFile scannerFile, string fullPath, string fileName)
+        private async Task<ErrorCodes> CreateAttachmentFor<T>(T master, string fullPath, string fileName) where T : class, UnicontaBaseEntity
         {
             UserDocsClient userDocsClient = new UserDocsClient();
-            userDocsClient.SetMaster(scannerFile);
+            userDocsClient.SetMaster(master);
             // Reads the file as bytes
             userDocsClient._Data = File.ReadAllBytes(fullPath);
             // Sets the extension.
@@ -234,5 +321,7 @@ namespace FolderWatchService.Services
             // Wait for response and return the result
             return await _api.Insert(userDocsClient);
         }
+
+
     }
 }

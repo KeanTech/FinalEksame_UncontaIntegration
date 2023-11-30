@@ -1,5 +1,6 @@
 ﻿using Alaska.Library.Core.Factories;
 using Autofac;
+using FolderWatchService.Core.Generators;
 using FolderWatchService.Core.Handlers;
 using FolderWatchService.Core.Managers;
 using FolderWatchService.Services;
@@ -18,11 +19,15 @@ namespace FolderWatchService.Core.Containers
             ContainerBuilder builder = new ContainerBuilder();
 
             builder.RegisterType<ErrorHandler>();
-            builder.RegisterType<Factory>().As<IFactory>();
+            builder.RegisterType<Factory>().As<IFactory<IEntity>>();
+            builder.RegisterType<UnicontaFactory>().As<IUnicontaFactory>();
+            builder.RegisterType<KeyGenerator>().AsSelf().SingleInstance();
             builder.RegisterType<EncryptionManager>();
             builder.RegisterType<ConfigManager>().As<IConfigManager>();
-            builder.RegisterType<ProductionManager>();
-            builder.RegisterType<UnicontaAPIService>().As<IUnicontaAPIService>();
+            // Register as a singleton
+            builder.RegisterType<UnicontaAPIService>().As<IUnicontaAPIService>().SingleInstance();
+            builder.RegisterType<ProductionService>().As<IProductionService>();
+            builder.RegisterType<ProductionManager>().As<IProductionManager>();
 
             return builder.Build();
         }

@@ -13,6 +13,7 @@ namespace FolderWatchService
     {
         static void Main(string[] args)
         {
+            // Instantiate the service container 
             IContainer container = AppServiceContainer.Configure();
             // Creates a scope to make sure that the registered services get disposed when the Windows Service stops
             using (var scope = container.BeginLifetimeScope())
@@ -26,8 +27,8 @@ namespace FolderWatchService
                         // the construktor for the service
                         s.ConstructUsing(runner =>
                         new FolderService(
-
-                            scope.Resolve<ProductionManager>(),
+                            // adds the needed services to the constructor
+                            scope.Resolve<IProductionManager>(),
                             scope.Resolve<IConfigManager>(),
                             scope.Resolve<IUnicontaAPIService>()
 

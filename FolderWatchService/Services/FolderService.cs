@@ -23,9 +23,9 @@ namespace FolderWatchService.Services
         private int _eventDelay => int.Parse(_configManager?.GetConfigFor(ConfigKey.EventDelay.ToString()));
         private readonly IConfigManager _configManager;
         private readonly IUnicontaAPIService _unicontaAPIService;
-        private readonly ProductionManager _productionManager;
+        private readonly IProductionManager _productionManager;
 
-        public FolderService(ProductionManager productionManager, IConfigManager configManager, IUnicontaAPIService unicontaAPIService)
+        public FolderService(IProductionManager productionManager, IConfigManager configManager, IUnicontaAPIService unicontaAPIService)
         {
             _productionManager = productionManager;
             _configManager = configManager;
@@ -89,7 +89,7 @@ namespace FolderWatchService.Services
             _unicontaAPIService.HandleFolderCreatedEvent(pendingPath, newFileName).Wait();
 
             if (_createProductions)
-                _productionManager.HandleCreateProduction(_unicontaAPIService.Api, newFileName).Wait();
+                _productionManager.HandleCreateProduction(newFileName).Wait();
 
             newFileName = $"{orgFileName ?? "stykliste"}{_fileSuffix}";
             var newFilePath = _folderPath + _FilesReadFolder + "\\" + newFileName;

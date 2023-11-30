@@ -12,7 +12,6 @@ namespace Alaska.Library.Core.Enums
         Username,
         Password,
         Company,
-        ENCKey,
         FilePath,
         CreationOfProductions,
         EventDelay

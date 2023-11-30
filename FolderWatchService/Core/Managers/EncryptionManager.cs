@@ -1,56 +1,71 @@
 ﻿using Alaska.Library.Core.Enums;
-using Alaska.Library.Models;
-using FromXSDFile.OIOUBL.ExportImport;
+using FolderWatchService.Core.Generators;
 using System;
-using System.Collections.Generic;
 using System.Configuration;
 using System.IO;
-using System.Linq;
 using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace FolderWatchService.Core.Managers
 {
-    public class EncryptionManager
+    public class EncryptionManager : IDisposable
     {
-        private readonly string[] _keys = { ConfigKey.ApiKey.ToString(), ConfigKey.Username.ToString(), ConfigKey.Password.ToString(), ConfigKey.ENCKey.ToString() };
-        private static string _key;
+        private readonly string[] _keys = { ConfigKey.ApiKey.ToString(), ConfigKey.Username.ToString(), ConfigKey.Password.ToString() };
+        private readonly KeyGenerator _keyGenerator;
+        private const int _keySize = 32;
+        private const int _ivSize = 16;
+        private byte[] _key;
+        private byte[] _iv;
 
+        public EncryptionManager(KeyGenerator keyGenerator)
+        {
+            _keyGenerator = keyGenerator;
+        }
+
+        private void GenerateRandomKey() => _key = _keyGenerator.GenerateRandomByteArray(_keySize);
+        private void GenerateRandomIV() => _iv = _keyGenerator.GenerateRandomByteArray(_ivSize);
+       
         /// <summary>
-        /// If the key has not been set it will be 
+        /// Generates a internal key and iv used in the <see cref="EncryptionManager"/>
         /// </summary>
-        /// <param name="yourKey"></param>
-        /// <returns></returns>
-        public static void SetKey(string yourKey) => _key = yourKey;
+        public void GenerateKeyAndIV()
+        {
+            GenerateRandomKey();
+            GenerateRandomIV(); 
+        }
 
         /// <summary>
         /// It will encrypt the content used to login
         /// </summary>
         /// <param name="settingsCollection"></param>
-        /// <returns></returns>
+        /// <returns>A <see cref="KeyValueConfigurationCollection"/> with the encrypted values</returns>
         public KeyValueConfigurationCollection EncryptAppSetting(KeyValueConfigurationCollection settingsCollection)
         {
-            if (settingsCollection != null)
+            // Return null because theres nothing to encrypt
+            if (settingsCollection == null)
+                return null;
+
+            // Return null because it cant run the encryption without the key
+            if (_key == null)
+                return null;
+
+            // Return null because it cant run the encryption without the iv
+            if (_iv == null)
+                return null;
+
+            foreach (string key in _keys)
             {
-                foreach (string key in _keys)
-                {
-                    // Get the specific setting by key
-                    string settingValue = settingsCollection[key]?.Value;
+                // Get the specific setting by key
+                string settingValue = settingsCollection[key]?.Value;
 
-                    if (!string.IsNullOrEmpty(settingValue))
-                    {
-                        // Use fixed key and IV for testing (replace with your own values)
-                        byte[] fixedKey = Encoding.UTF8.GetBytes(_key);
-                        byte[] fixedIV = Encoding.UTF8.GetBytes(_key);
+                if (settingValue == null)
+                    continue;
 
-                        // Encrypt the setting value using the fixed key and IV
-                        string encryptedValue = EncryptString(settingValue, fixedKey, fixedIV);
+                // Encrypt the setting value using the fixed key and IV
+                string encryptedValue = EncryptString(settingValue);
 
-                        // Update the encrypted value in the configuration file
-                        settingsCollection[key].Value = encryptedValue;
-                    }
-                }
+                // Update the encrypted value in the configuration file
+                settingsCollection[key].Value = encryptedValue;
+
             }
 
             return settingsCollection;
@@ -60,10 +75,19 @@ namespace FolderWatchService.Core.Managers
         /// Decrypt content for login
         /// </summary>
         /// <param name="settingsCollection"></param>
-        /// <returns>A <see cref="string[]"/> with the decrypted values</returns>
+        /// <returns>A <see cref="KeyValueConfigurationCollection"/> with the decrypted values</returns>
         public KeyValueConfigurationCollection DecryptUserSettings(KeyValueConfigurationCollection settingsCollection)
         {
+            // Return null because theres nothing to decrypt
             if (settingsCollection == null)
+                return null;
+
+            // Return null because it cant run the decryption without the key
+            if (_key == null)
+                return null;
+
+            // Return null because it cant run the decryption without the iv
+            if (_iv == null)
                 return null;
 
             foreach (var key in _keys)
@@ -73,13 +97,9 @@ namespace FolderWatchService.Core.Managers
 
                 if (encryptedValue == null)
                     continue;
-                
-                // Use fixed key and IV for testing (replace with your own values)
-                byte[] fixedKey = Encoding.UTF8.GetBytes(key);
-                byte[] fixedIV = Encoding.UTF8.GetBytes(key);
 
                 // Decrypt the setting value using the fixed key and IV
-                string decryptedValue = DecryptString(encryptedValue, fixedKey, fixedIV);
+                string decryptedValue = DecryptString(encryptedValue);
                 // Update the decrypted value in the configuration file
                 settingsCollection[key].Value = encryptedValue;
             }
@@ -87,12 +107,20 @@ namespace FolderWatchService.Core.Managers
             return settingsCollection;
         }
 
-        private string EncryptString(string input, byte[] key, byte[] iv)
+        /// <summary>
+        /// Uses the Aes managed algorithm to encrypt the input string
+        /// 
+        /// <para>The key and iv has to be set before this can run</para>
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns>The encrypted string</returns>
+        public string EncryptString(string input)
         {
+            // adds a using to make sure that it gets disposed after 
             using (AesManaged aesAlg = new AesManaged())
             {
-                aesAlg.Key = key;
-                aesAlg.IV = iv;
+                aesAlg.Key = _key;
+                aesAlg.IV = _iv;
 
                 ICryptoTransform encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
 
@@ -111,12 +139,20 @@ namespace FolderWatchService.Core.Managers
             }
         }
 
-        private string DecryptString(string input, byte[] key, byte[] iv)
+        /// <summary>
+        /// Uses the Aes managed algorithm to decrypt the input string
+        /// 
+        /// <para>The key and iv has to be set before this can run</para>
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns>The decrypted string</returns>
+        public string DecryptString(string input)
         {
+            // adds a using to make sure that it gets disposed after
             using (AesManaged aesAlg = new AesManaged())
             {
-                aesAlg.Key = key;
-                aesAlg.IV = iv;
+                aesAlg.Key = _key;
+                aesAlg.IV = _iv;
 
                 ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
 
@@ -131,6 +167,12 @@ namespace FolderWatchService.Core.Managers
                     }
                 }
             }
+        }
+
+        public void Dispose()
+        {
+            _key = null;
+            _iv = null;
         }
     }
 }

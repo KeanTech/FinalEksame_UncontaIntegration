@@ -100,16 +100,20 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Core\Containers\AppServiceContainer.cs" />
+    <Compile Include="Core\Generators\KeyGenerator.cs" />
     <Compile Include="Core\Helpers\FileAndPathHelper.cs" />
     <Compile Include="Core\Managers\ConfigManager.cs" />
     <Compile Include="Core\Managers\EncryptionManager.cs" />
     <Compile Include="Core\Handlers\ErrorHandler.cs" />
     <Compile Include="Core\Managers\IConfigManager.cs" />
+    <Compile Include="Core\Managers\IProductionManager.cs" />
     <Compile Include="Core\Managers\ProductionManager.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\FolderService.cs" />
+    <Compile Include="Services\IProductionService.cs" />
     <Compile Include="Services\IUnicontaAPIService.cs" />
+    <Compile Include="Services\ProductionService.cs" />
     <Compile Include="Services\UnicontaAPIService.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -17,13 +17,14 @@ namespace FolderWatchService.Core.Managers
     public class ConfigManager : IConfigManager, IDisposable
     {
         private readonly EncryptionManager _encryptionManager;
-        private readonly IFactory _factory;
+        private readonly IFactory<IEntity> _factory;
         private readonly string _baseDir = AppDomain.CurrentDomain.BaseDirectory;
         private const string _configFile = nameof(FolderWatchService) + ".exe.config";
-        private bool _isEnctypted = false;
         private static Dictionary<string, string> _settings { get; set; }
+        
         public ConfigurationErrorsException LastError { get; set; }
-        public ConfigManager(EncryptionManager encryptionManager, IFactory factory)
+
+        public ConfigManager(EncryptionManager encryptionManager, IFactory<IEntity> factory)
         {
             _encryptionManager = encryptionManager;
             _factory = factory;
@@ -40,64 +41,104 @@ namespace FolderWatchService.Core.Managers
 
         public void ReadConfigurations() 
         {
-            ExeConfigurationFileMap configFileMap = new ExeConfigurationFileMap
-            {
-                ExeConfigFilename = Path.Combine(_baseDir, _configFile)
-            };
-
-            Configuration config = ConfigurationManager.OpenMappedExeConfiguration(configFileMap, ConfigurationUserLevel.None);
+            Configuration config = GetConfigFile();
             var keys = config.AppSettings.Settings.AllKeys;
-            EncryptionManager.SetKey(config.AppSettings.Settings["ENCKey"].Value);
-                
+
+            _encryptionManager.GenerateKeyAndIV();
+           
             if (_settings == null)
                 _settings = new Dictionary<string, string>();
 
+            EncryptConfigFile(config);
+
+            // inserts all key and values from the appSettings section of the App.config
             foreach (var key in keys)
             {
+                /// add the key and value to the <see cref="_settings"/>
                 _settings.Add(key, config.AppSettings.Settings[key].Value);
             }
 
-            EncryptConfigFile(config);
-            _isEnctypted = true;
             config.Save(ConfigurationSaveMode.Modified);
         }
 
+        /// <summary>
+        /// Used to get the stored configurations
+        /// 
+        /// <para>It will decrypt the value if needed</para>
+        /// </summary>
+        /// <param name="key">Key for the <see cref="KeyValuePair{TKey, TValue}"/></param>
+        /// <returns></returns>
         public string GetConfigFor(string key) 
         {
-            if(_settings.ContainsKey(key))
+            if (_settings.ContainsKey(key))
+            {
+                // Only Password, Username and ApiKey gets decrypted
+                if (key == ConfigKey.Password.ToString() || key == ConfigKey.Username.ToString() || key == ConfigKey.ApiKey.ToString())
+                { 
+                    var keyValue = _settings[key];
+                    var decryptedValue = _encryptionManager.DecryptString(keyValue);
+                    return decryptedValue;
+                }
+
                 return _settings[key];
+            }
 
             return "";
         }
 
+        /// <summary>
+        /// Reads the App.config file and return it as <see cref="Configuration"/>
+        /// </summary>
+        /// <returns></returns>
+        private Configuration GetConfigFile() 
+        {
+            // Has to make a FileMap
+            ExeConfigurationFileMap configFileMap = new ExeConfigurationFileMap
+            {
+                // Sets the path on the App.config
+                ExeConfigFilename = Path.Combine(_baseDir, _configFile)
+            };
+
+            // Load the file as Configuration
+            Configuration config = ConfigurationManager.OpenMappedExeConfiguration(configFileMap, ConfigurationUserLevel.None);
+
+            return config;
+        }
+
+        /// <summary>
+        /// Gets the configurations for Uniconta login
+        /// </summary>
+        /// <returns>A <see cref="LoginInfo"/> with the needed info to login</returns>
         public LoginInfo GetLoginInfo() 
         {
             var loginInfo = _factory.Create<LoginInfo>();
+            // Get the key value from the config Dictionary 
             loginInfo.ApiKey = GetConfigFor(ConfigKey.ApiKey.ToString());
             loginInfo.Username = GetConfigFor(ConfigKey.Username.ToString());
             loginInfo.Password = GetConfigFor(ConfigKey.Password.ToString());
             loginInfo.CompanyId = int.Parse(GetConfigFor(ConfigKey.Company.ToString()));
+            
             return loginInfo;
-        }
-
-        public void ResetConfiguration() 
-        {
-            _settings = new Dictionary<string, string>();
-            ReadConfigurations();
-            _isEnctypted = false;
         }
 
         private void EncryptConfigFile(Configuration configuration) 
         {
-            _encryptionManager.EncryptAppSetting(configuration.AppSettings.Settings);
+            var settings = _encryptionManager.EncryptAppSetting(configuration.AppSettings.Settings);
+
+            if (settings == null)
+                ErrorHandler.WriteError(new Exception("Error while trying to encrypt value cannot be null")).ConfigureAwait(false);
         }
 
-        private void DecryptKeyValues(Configuration configuration) 
+        private void DecryptConfigFile(Configuration configuration) 
         {
-            _encryptionManager.DecryptUserSettings(configuration.AppSettings.Settings);
+            var settings = _encryptionManager.DecryptUserSettings(configuration.AppSettings.Settings);
+
+            if (settings == null)
+                ErrorHandler.WriteError(new Exception("Error while trying to decrypt value cannot be null")).ConfigureAwait(false);
         }
         public void Dispose()
         {
+            _encryptionManager.Dispose();
             _settings = null;
             LastError = null;
         }

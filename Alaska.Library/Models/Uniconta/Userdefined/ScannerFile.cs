@@ -13,18 +13,7 @@ namespace Alaska.Library.Models.Uniconta.Userdefined
     {
         public override int UserTableId { get { return 81790; } }
         public override int CompanyId { get { return 80730; } }
-
-        public static ScannerFile Factory(Company company, string name, string filePath, string status) 
-        {
-            ScannerFile scannerFile = new ScannerFile();
-            scannerFile.SetMaster(company);
-            scannerFile.KeyName = name;
-            scannerFile.FilePath = filePath;
-            scannerFile.Created = DateTime.Now;
-            scannerFile.Status = status;
-            return scannerFile;
-        }
-
+        
         [Display(Name = "Filsti")]
         public string FilePath
         {

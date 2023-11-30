@@ -15,14 +15,6 @@ namespace Alaska.Library.Models.Uniconta.Userdefined
         public override int CompanyId { get { return 80730; } }
         public override int MasterTableId { get { return 81790; } }
 
-        public static ScannerData Factory(ScannerFile scannerFile) 
-        {
-            ScannerData data = new ScannerData();
-            data.SetMaster(scannerFile);
-
-            return data;
-        }
-
         [Display(Name = "Vare nummer")]
         public string ItemNumber
         {
