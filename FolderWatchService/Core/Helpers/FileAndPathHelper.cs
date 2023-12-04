@@ -3,6 +3,9 @@ using System.Linq;
 
 namespace FolderWatchService.Core.Helpers
 {
+    /// <summary>
+    /// Helperclass for paths
+    /// </summary>
     public static class FileAndPathHelper
     {
         /// <summary>
@@ -16,22 +19,22 @@ namespace FolderWatchService.Core.Helpers
             return fileNameArray.LastOrDefault();
         }
 
-        public static void CreateNeededFolders(string folder1, string folder2) 
+        /// <summary>
+        /// Check if the folderpath exist if not then create it
+        /// </summary>
+        /// <param name="folder1"></param>
+        /// <param name="folder2"></param>
+        /// <param name="folder3"></param>
+        public static void CreateNeededFolders(string folder1, string folder2, string folder3) 
         {
             if (Directory.Exists(folder1) == false)
                 Directory.CreateDirectory(folder1);
 
             if (Directory.Exists(folder2) == false)
                 Directory.CreateDirectory(folder2);
-        }
 
-        public static void MoveFileToPending(string fullPath) 
-        {
-            
-        }
-        public static void MoveFileToRead(string fullPath) 
-        {
-            
+            if (Directory.Exists(folder2) == false)
+                Directory.CreateDirectory(folder2);
         }
     }
 }

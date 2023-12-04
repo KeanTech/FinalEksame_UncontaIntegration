@@ -17,10 +17,12 @@ namespace FolderWatchService.Services
     public class ProductionService : IProductionService
     {
         private readonly IUnicontaAPIService _unicontaAPIService;
+        private readonly IErrorHandler _errorHandler;
 
-        public ProductionService(IUnicontaAPIService unicontaAPIService)
+        public ProductionService(IUnicontaAPIService unicontaAPIService, IErrorHandler errorHandler)
         {
             _unicontaAPIService = unicontaAPIService;
+            _errorHandler = errorHandler;
         }
 
         public async Task<ErrorCodes> CreateProductions(List<ProductionOrderClient> productions, ScannerData[] scannerData, ScannerFile scannerFile)
@@ -34,7 +36,7 @@ namespace FolderWatchService.Services
                 {
                     scannerData[count].Status = $"Error {insertResult}";
                     scannerFile.Status = "Error";
-                    var task = ErrorHandler.WriteError(new UnicontaException("Error while trying to insert Production"), insertResult).ConfigureAwait(false);
+                    var task = _errorHandler.WriteError(new UnicontaException("Error while trying to insert Production"), insertResult).ConfigureAwait(false);
                     continue;
                 }
 
@@ -55,7 +57,7 @@ namespace FolderWatchService.Services
                 {
                     scannerData[count].Status = $"Error: {creationResult}";
                     scannerFile.Status = "Error";
-                    var task = ErrorHandler.WriteError(new UnicontaException("Error while creating productionlines", new UnicontaException($"Failed to create lines for production: {production.ProductionNumber}")), creationResult);
+                    var task = _errorHandler.WriteError(new UnicontaException("Error while creating productionlines", new UnicontaException($"Failed to create lines for production: {production.ProductionNumber}")), creationResult);
                 }
 
                 count++;
@@ -72,7 +74,7 @@ namespace FolderWatchService.Services
                 if (relatedScannerData == null)
                 {
                     // If there is no ScannerData, it will write to log and continue with the next production in the list
-                    await ErrorHandler.WriteError(new UnicontaException("Error while reporting as finished", new Exception($"Errormessage: There was no ScannerData for production {production.ProductionNumber}")));
+                    await _errorHandler.WriteError(new UnicontaException("Error while reporting as finished", new Exception($"Errormessage: There was no ScannerData for production {production.ProductionNumber}")));
                     continue;
                 }
                 try
@@ -85,13 +87,13 @@ namespace FolderWatchService.Services
                         lastError = result.Err;
                         relatedScannerData.Status = $"Error: {result.Err}";
                         scannerFile.Status = "Error";
-                        var task = ErrorHandler.WriteError(new UnicontaException("Error while reporting as finished", new UnicontaException($"Failed post production: {production.ProductionNumber}")), result.Err);
+                        var task = _errorHandler.WriteError(new UnicontaException("Error while reporting as finished", new UnicontaException($"Failed post production: {production.ProductionNumber}")), result.Err);
                         continue;
                     }
                 }
                 catch (Exception ex)
                 {
-                    await ErrorHandler.WriteError(new UnicontaException("Exception while reporting as finished", new Exception("Errormessage: " + ex.Message)));
+                    await _errorHandler.WriteError(new UnicontaException("Exception while reporting as finished", new Exception("Errormessage: " + ex.Message)));
                 }
             }
 

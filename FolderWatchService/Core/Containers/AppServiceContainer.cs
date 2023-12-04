@@ -18,7 +18,7 @@ namespace FolderWatchService.Core.Containers
         {
             ContainerBuilder builder = new ContainerBuilder();
 
-            builder.RegisterType<ErrorHandler>();
+            builder.RegisterType<ErrorHandler>().As<IErrorHandler>();
             builder.RegisterType<Factory>().As<IFactory<IEntity>>();
             builder.RegisterType<UnicontaFactory>().As<IUnicontaFactory>();
             builder.RegisterType<KeyGenerator>().AsSelf().SingleInstance();

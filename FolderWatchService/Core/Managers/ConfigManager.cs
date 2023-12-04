@@ -18,16 +18,18 @@ namespace FolderWatchService.Core.Managers
     {
         private readonly EncryptionManager _encryptionManager;
         private readonly IFactory<IEntity> _factory;
+        private readonly IErrorHandler _errorHandler;
         private readonly string _baseDir = AppDomain.CurrentDomain.BaseDirectory;
-        private const string _configFile = nameof(FolderWatchService) + ".exe.config";
+        private const string _configFileName = nameof(FolderWatchService) + ".exe.config";
         private static Dictionary<string, string> _settings { get; set; }
         
         public ConfigurationErrorsException LastError { get; set; }
 
-        public ConfigManager(EncryptionManager encryptionManager, IFactory<IEntity> factory)
+        public ConfigManager(EncryptionManager encryptionManager, IFactory<IEntity> factory, IErrorHandler errorHandler)
         {
             _encryptionManager = encryptionManager;
             _factory = factory;
+            _errorHandler = errorHandler;
             try
             {
                 ReadConfigurations();
@@ -35,7 +37,7 @@ namespace FolderWatchService.Core.Managers
             catch (ConfigurationErrorsException ex)
             {
                 LastError = ex;
-                ErrorHandler.WriteError(ex).ConfigureAwait(false);
+                _errorHandler.WriteError(ex).ConfigureAwait(false);
             }
         }
 
@@ -96,7 +98,7 @@ namespace FolderWatchService.Core.Managers
             ExeConfigurationFileMap configFileMap = new ExeConfigurationFileMap
             {
                 // Sets the path on the App.config
-                ExeConfigFilename = Path.Combine(_baseDir, _configFile)
+                ExeConfigFilename = Path.Combine(_baseDir, _configFileName)
             };
 
             // Load the file as Configuration
@@ -123,10 +125,10 @@ namespace FolderWatchService.Core.Managers
 
         private void EncryptConfigFile(Configuration configuration) 
         {
-            var settings = _encryptionManager.EncryptAppSetting(configuration.AppSettings.Settings);
+            var settings = _encryptionManager.EncryptUserSetting(configuration.AppSettings.Settings);
 
             if (settings == null)
-                ErrorHandler.WriteError(new Exception("Error while trying to encrypt value cannot be null")).ConfigureAwait(false);
+                _errorHandler.WriteError(new Exception("Error while trying to encrypt value cannot be null")).ConfigureAwait(false);
         }
 
         private void DecryptConfigFile(Configuration configuration) 
@@ -134,7 +136,7 @@ namespace FolderWatchService.Core.Managers
             var settings = _encryptionManager.DecryptUserSettings(configuration.AppSettings.Settings);
 
             if (settings == null)
-                ErrorHandler.WriteError(new Exception("Error while trying to decrypt value cannot be null")).ConfigureAwait(false);
+                _errorHandler.WriteError(new Exception("Error while trying to decrypt value cannot be null")).ConfigureAwait(false);
         }
         public void Dispose()
         {

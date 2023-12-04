@@ -7,7 +7,7 @@ using System.Security.Cryptography;
 
 namespace FolderWatchService.Core.Managers
 {
-    public class EncryptionManager : IDisposable
+    public class EncryptionManager : IDisposable, IEncryptionManager
     {
         private readonly string[] _keys = { ConfigKey.ApiKey.ToString(), ConfigKey.Username.ToString(), ConfigKey.Password.ToString() };
         private readonly KeyGenerator _keyGenerator;
@@ -23,14 +23,14 @@ namespace FolderWatchService.Core.Managers
 
         private void GenerateRandomKey() => _key = _keyGenerator.GenerateRandomByteArray(_keySize);
         private void GenerateRandomIV() => _iv = _keyGenerator.GenerateRandomByteArray(_ivSize);
-       
+
         /// <summary>
         /// Generates a internal key and iv used in the <see cref="EncryptionManager"/>
         /// </summary>
         public void GenerateKeyAndIV()
         {
             GenerateRandomKey();
-            GenerateRandomIV(); 
+            GenerateRandomIV();
         }
 
         /// <summary>
@@ -38,7 +38,7 @@ namespace FolderWatchService.Core.Managers
         /// </summary>
         /// <param name="settingsCollection"></param>
         /// <returns>A <see cref="KeyValueConfigurationCollection"/> with the encrypted values</returns>
-        public KeyValueConfigurationCollection EncryptAppSetting(KeyValueConfigurationCollection settingsCollection)
+        public KeyValueConfigurationCollection EncryptUserSetting(KeyValueConfigurationCollection settingsCollection)
         {
             // Return null because theres nothing to encrypt
             if (settingsCollection == null)

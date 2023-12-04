@@ -1,32 +1,25 @@
-﻿using Alaska.Library.Core.Factories;
-using Alaska.Library.Models;
-using Alaska.Library.Models.Uniconta.Userdefined;
-using FolderWatchService.Services;
-using Renci.SshNet.Security;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Text.Json;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using Uniconta.ClientTools.DataModel;
 using Uniconta.Common;
 
 namespace FolderWatchService.Core.Handlers
 {
-    public class ErrorHandler
+    /// <summary>
+    /// This class is handles errors by writing the message to the user
+    /// </summary>
+    public class ErrorHandler : IErrorHandler
     {
-        private static string _path = AppDomain.CurrentDomain.BaseDirectory;
+        private readonly string _path = AppDomain.CurrentDomain.BaseDirectory;
+
         /// <summary>
         /// Creates a file called error.txt containing the information about the Exception
         /// </summary>
         /// <param name="path"></param>
         /// <param name="exception"></param>
         /// <returns></returns>
-        public static async Task WriteError(Exception exception, ErrorCodes errorCode = ErrorCodes.Succes)
+        public async Task WriteError(Exception exception, ErrorCodes errorCode = ErrorCodes.Succes)
         {
             string fullPath = Path.Combine(_path, $"Errors\\{DateTime.Now.ToString("dd-MM-yy")}_error.txt");
 
@@ -39,14 +32,18 @@ namespace FolderWatchService.Core.Handlers
                 await writer.WriteLineAsync($"Error: at {DateTime.Now}");
                 await writer.WriteLineAsync($"Errormessage: {exception.Message}");
                 await writer.WriteLineAsync($"Inner exception: {exception.InnerException}");
-                if(errorCode != ErrorCodes.Succes)
+                if (errorCode != ErrorCodes.Succes)
                     await writer.WriteLineAsync($"Api error: {errorCode}");
 
                 await writer.WriteLineAsync($"-------------Record Done-------------");
             }
         }
-
-        public static void ShowErrorMessage(string message) 
+        
+        /// <summary>
+        /// Used to show a error message box to the user 
+        /// </summary>
+        /// <param name="message"></param>
+        public void ShowErrorMessage(string message)
         {
             MessageBox.Show("Error occurred in FolderService:\n" + message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }

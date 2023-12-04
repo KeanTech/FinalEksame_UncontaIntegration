@@ -14,6 +14,7 @@ namespace Alaska.Library.Core.Enums
         Company,
         FilePath,
         CreationOfProductions,
-        EventDelay
+        EventDelay,
+        ReportAsFinished
     }
 }

@@ -6,6 +6,6 @@ namespace FolderWatchService.Core.Managers
 {
     public interface IProductionManager
     {
-        Task<ErrorCodes> HandleCreateProduction(string fileName);
+        Task<ErrorCodes> HandleCreateProduction(string fileName, bool reportAsFinished);
     }
 }

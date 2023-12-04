@@ -30,8 +30,8 @@ namespace FolderWatchService
                             // adds the needed services to the constructor
                             scope.Resolve<IProductionManager>(),
                             scope.Resolve<IConfigManager>(),
-                            scope.Resolve<IUnicontaAPIService>()
-
+                            scope.Resolve<IUnicontaAPIService>(), 
+                            scope.Resolve<IErrorHandler>()
                             ));
                         // Sets the method to call on start
                         s.WhenStarted(runner => runner.Start());

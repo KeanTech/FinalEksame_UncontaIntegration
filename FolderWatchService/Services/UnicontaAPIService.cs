@@ -27,19 +27,21 @@ namespace FolderWatchService.Services
     {
         private CrudAPI _api;
         private readonly IUnicontaFactory _factory;
+        private readonly IErrorHandler _errorHandler;
 
-        public UnicontaAPIService(IUnicontaFactory factory)
+        public UnicontaAPIService(IUnicontaFactory factory, IErrorHandler errorHandler)
         {
             _factory = factory;
+            _errorHandler = errorHandler;
         }
-
-        public ProductionAPI CreateProductionApi() => _factory.CreateProductionApi(_api);
 
         /// <summary>
         /// Public getter for company
         /// <para>Used for access purposes and to create Uniconta objects</para>
         /// </summary>
         public Company Company => _api?.CompanyEntity;
+        public ProductionAPI CreateProductionApi() => _factory.CreateProductionApi(_api);
+
 
         #region Query methods
         public async Task<T[]> Query<T>() where T : class, UnicontaBaseEntity, new()
@@ -115,7 +117,7 @@ namespace FolderWatchService.Services
             // If the result was not successful it will write to errorlog and return the ErrorCode 
             if (insertResult != ErrorCodes.Succes)
             {
-                var task = ErrorHandler.WriteError(new UnicontaException("Error while trying to insert record", new UnicontaException($"Error on Insert in {nameof(UnicontaAPIService.HandleFolderCreatedEvent)}")), insertResult).ConfigureAwait(false);
+                var task = _errorHandler.WriteError(new UnicontaException("Error while trying to insert record", new UnicontaException($"Error on Insert in {nameof(UnicontaAPIService.HandleFolderCreatedEvent)}")), insertResult).ConfigureAwait(false);
                 return insertResult;
             }
 
@@ -140,7 +142,7 @@ namespace FolderWatchService.Services
             // if the insert fails write to log and return the error
             if (insertResult != ErrorCodes.Succes)
             {
-                var task = ErrorHandler.WriteError(new UnicontaException("Error while trying to insert record lines", new UnicontaException($"Error on Insert in {nameof(UnicontaAPIService.HandleFolderCreatedEvent)}")), insertResult).ConfigureAwait(false);
+                var task = _errorHandler.WriteError(new UnicontaException("Error while trying to insert record lines", new UnicontaException($"Error on Insert in {nameof(UnicontaAPIService.HandleFolderCreatedEvent)}")), insertResult).ConfigureAwait(false);
                 return insertResult;
             }
 
@@ -150,7 +152,7 @@ namespace FolderWatchService.Services
             // if the insert fails write to log and return the error
             if (insertResult != ErrorCodes.Succes)
             {
-                var task = ErrorHandler.WriteError(new UnicontaException("Error while trying to insert attachment", new UnicontaException($"Error on Insert in {nameof(UnicontaAPIService.HandleFolderCreatedEvent)}")), insertResult).ConfigureAwait(false);
+                var task = _errorHandler.WriteError(new UnicontaException("Error while trying to insert attachment", new UnicontaException($"Error on Insert in {nameof(UnicontaAPIService.HandleFolderCreatedEvent)}")), insertResult).ConfigureAwait(false);
                 return insertResult;
             }
 
@@ -261,14 +263,14 @@ namespace FolderWatchService.Services
             }
             catch (UnicontaException ex)
             {
-                await ErrorHandler.WriteError(ex, loginResponse);
+                await _errorHandler.WriteError(ex, loginResponse);
             }
             finally
             { // if the login is not successful
                 if (loginResponse != ErrorCodes.Succes)
                 {
-                    MessageBox.Show($"Uniconta login failed cant start service!\nError Message: {loginResponse}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    await ErrorHandler.WriteError(new UnicontaException($"Uniconta login failed cant start service"), loginResponse);
+                    _errorHandler.ShowErrorMessage($"Uniconta login failed cant start service!\nError Message: {loginResponse}");
+                    await _errorHandler.WriteError(new UnicontaException($"Uniconta login failed cant start service"), loginResponse);
                     // Exit with exitcode: ERROR_SERVICE_LOGON_FAILED(1069) https://learn.microsoft.com/en-us/windows/win32/debug/system-error-codes--1000-1299-
                     Environment.Exit(1069);
                 }
@@ -321,7 +323,5 @@ namespace FolderWatchService.Services
             // Wait for response and return the result
             return await _api.Insert(userDocsClient);
         }
-
-
     }
 }

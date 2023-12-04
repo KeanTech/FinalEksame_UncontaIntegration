@@ -2,17 +2,10 @@
 using Alaska.Library.Models.Uniconta.Userdefined;
 using FolderWatchService.Core.Handlers;
 using FolderWatchService.Services;
-using FromXSDFile.OIOUBL.ExportImport;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-using System.Windows.Controls;
-using Uniconta.API.Inventory;
 using Uniconta.API.Service;
-using Uniconta.API.System;
-using Uniconta.ClientTools;
 using Uniconta.ClientTools.DataModel;
 using Uniconta.Common;
 using Uniconta.DataModel;
@@ -24,15 +17,17 @@ namespace FolderWatchService.Core.Managers
         private readonly IUnicontaAPIService _unicontaAPIService;
         private readonly IUnicontaFactory _factory;
         private readonly IProductionService _productionService;
+        private readonly IErrorHandler _errorHandler;
         private const string _productionGroupName = "ScannerImport";
-        public ProductionManager(IUnicontaAPIService unicontaAPIService, IUnicontaFactory factory, IProductionService productionService)
+        public ProductionManager(IUnicontaAPIService unicontaAPIService, IUnicontaFactory factory, IProductionService productionService, IErrorHandler errorHandler)
         {
             _unicontaAPIService = unicontaAPIService;
             _factory = factory;
             _productionService = productionService;
+            _errorHandler = errorHandler;
         }
 
-        public async Task<ErrorCodes> HandleCreateProduction(string fileName)
+        public async Task<ErrorCodes> HandleCreateProduction(string fileName, bool reportAsFinished)
         {
             ErrorCodes apiResult = ErrorCodes.Succes;
             // Creates a query filter
@@ -64,7 +59,7 @@ namespace FolderWatchService.Core.Managers
             {
                 // 
                 var item = Items.FirstOrDefault(x => x.Item == data.ItemNumber).Item;
-                data.Status = "Initiated";
+                data.Status = "Oprettet";
                 data.Validated = true;
                 var production = GenerateProduction(data, item, productionGroup);
                 productions.Add(production);
@@ -90,20 +85,20 @@ namespace FolderWatchService.Core.Managers
 
             await _productionService.CreateProductionLines(prodApi, productions, scannerData, scannerFile);
 
-            apiResult = await _productionService.ReportAsFinished(prodApi, productions, scannerFile, scannerData);
+            // only run this if ReportAsFinished is set to 1 in the App.config
+            if (reportAsFinished)
+                await _productionService.ReportAsFinished(prodApi, productions, scannerFile, scannerData);
 
-            if (apiResult != ErrorCodes.Succes)
-
-
-                if (string.IsNullOrEmpty(scannerFile.Status) || scannerFile.Status == "Initiated")
-                    scannerFile.Status = "Afsluttet";
+            // Set the status on ScannerFile as "Afsluttet"
+            if (string.IsNullOrEmpty(scannerFile.Status) || scannerFile.Status == "Oprettet")
+                scannerFile.Status = "Afsluttet";
 
 
             var updateResult = await _unicontaAPIService.Update(scannerFile);
 
             if (updateResult != ErrorCodes.Succes)
             {
-                await ErrorHandler.WriteError(new UnicontaException("Error while updating ScannerFile"), updateResult).ConfigureAwait(false);
+                await _errorHandler.WriteError(new UnicontaException("Error while updating ScannerFile"), updateResult).ConfigureAwait(false);
                 return updateResult;
             }
 
@@ -111,7 +106,7 @@ namespace FolderWatchService.Core.Managers
 
             if (updateResult != ErrorCodes.Succes)
             {
-                await ErrorHandler.WriteError(new UnicontaException("Error while updating ScannerData"), updateResult).ConfigureAwait(false);
+                await _errorHandler.WriteError(new UnicontaException("Error while updating ScannerData"), updateResult).ConfigureAwait(false);
                 return updateResult;
             }
 

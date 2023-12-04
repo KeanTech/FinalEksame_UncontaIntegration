@@ -101,11 +101,13 @@
   <ItemGroup>
     <Compile Include="Core\Containers\AppServiceContainer.cs" />
     <Compile Include="Core\Generators\KeyGenerator.cs" />
+    <Compile Include="Core\Handlers\IErrorHandler.cs" />
     <Compile Include="Core\Helpers\FileAndPathHelper.cs" />
     <Compile Include="Core\Managers\ConfigManager.cs" />
     <Compile Include="Core\Managers\EncryptionManager.cs" />
     <Compile Include="Core\Handlers\ErrorHandler.cs" />
     <Compile Include="Core\Managers\IConfigManager.cs" />
+    <Compile Include="Core\Managers\IEncryptionManager.cs" />
     <Compile Include="Core\Managers\IProductionManager.cs" />
     <Compile Include="Core\Managers\ProductionManager.cs" />
     <Compile Include="Program.cs" />
