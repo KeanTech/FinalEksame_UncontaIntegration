@@ -16,7 +16,7 @@ namespace FolderWatchService.Core.Managers
     /// </summary>
     public class ConfigManager : IConfigManager, IDisposable
     {
-        private readonly EncryptionManager _encryptionManager;
+        private readonly IEncryptionManager _encryptionManager;
         private readonly IFactory<IEntity> _factory;
         private readonly IErrorHandler _errorHandler;
         private readonly string _baseDir = AppDomain.CurrentDomain.BaseDirectory;
@@ -25,7 +25,7 @@ namespace FolderWatchService.Core.Managers
         
         public ConfigurationErrorsException LastError { get; set; }
 
-        public ConfigManager(EncryptionManager encryptionManager, IFactory<IEntity> factory, IErrorHandler errorHandler)
+        public ConfigManager(IEncryptionManager encryptionManager, IFactory<IEntity> factory, IErrorHandler errorHandler)
         {
             _encryptionManager = encryptionManager;
             _factory = factory;
