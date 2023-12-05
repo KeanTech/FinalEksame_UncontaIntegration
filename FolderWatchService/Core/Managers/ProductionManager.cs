@@ -18,6 +18,9 @@ namespace FolderWatchService.Core.Managers
         private readonly IUnicontaFactory _factory;
         private readonly IProductionService _productionService;
         private readonly IErrorHandler _errorHandler;
+        /// <summary>
+        /// Used as a name container for Uniconta ProductionGroups
+        /// </summary>
         private const string _productionGroupName = "ScannerImport";
         public ProductionManager(IUnicontaAPIService unicontaAPIService, IUnicontaFactory factory, IProductionService productionService, IErrorHandler errorHandler)
         {
@@ -27,6 +30,12 @@ namespace FolderWatchService.Core.Managers
             _errorHandler = errorHandler;
         }
 
+        /// <summary>
+        /// Tries to find the file name in Uniconta userdefined tables  
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <param name="reportAsFinished"></param>
+        /// <returns>ErrorCodes success as default<para>in case of errors it will return the errorcode from the api</para></returns>
         public async Task<ErrorCodes> HandleCreateProduction(string fileName, bool reportAsFinished)
         {
             ErrorCodes apiResult = ErrorCodes.Succes;
@@ -66,7 +75,7 @@ namespace FolderWatchService.Core.Managers
             {
                 // 
                 var item = Items.FirstOrDefault(x => x.Item == data.ItemNumber).Item;
-                data.Status = "Oprettet";
+                data.Status = "Initiated";
                 data.Validated = true;
                 var production = GenerateProduction(data, item, productionGroup);
                 productions.Add(production);
@@ -96,9 +105,9 @@ namespace FolderWatchService.Core.Managers
             if (reportAsFinished)
                 await _productionService.ReportAsFinished(prodApi, productions, scannerFile, scannerData);
 
-            // Set the status on ScannerFile as "Afsluttet"
-            if (string.IsNullOrEmpty(scannerFile.Status) || scannerFile.Status == "Oprettet")
-                scannerFile.Status = "Afsluttet";
+            // Set the status on ScannerFile as "Done" if no errors occured before
+            if (string.IsNullOrEmpty(scannerFile.Status) || scannerFile.Status == "Initiated")
+                scannerFile.Status = "Done";
 
 
             var updateResult = await _unicontaAPIService.Update(scannerFile);
@@ -120,18 +129,26 @@ namespace FolderWatchService.Core.Managers
             return ErrorCodes.Succes;
         }
 
+        /// <summary>
+        /// Used to generate a ProductionOrderClient object and set the needed properties
+        /// </summary>
+        /// <param name="scannerData"></param>
+        /// <param name="prodItem"></param>
+        /// <param name="productionOrderGroupClient"></param>
+        /// <returns>A new <see cref="ProductionOrderClient"/></returns>
         private ProductionOrderClient GenerateProduction(ScannerData scannerData, string prodItem, ProductionOrderGroupClient productionOrderGroupClient)
         {
             ProductionOrderClient productionOrder = _factory.Create<ProductionOrderClient>();
-
+            // Used to set database relation
             productionOrder.SetMaster(scannerData);
             productionOrder.ProdItem = prodItem;
             productionOrder.ProdQty = scannerData.Quantity;
+            // Set the group so it is displayed in Uniconta where the production came from
             productionOrder.Group = productionOrderGroupClient.KeyStr;
+            // Set the storage to ordered to tell Uniconta that it has to reserve the items needed in the production
             productionOrder.Storage = "Ordered";
 
             return productionOrder;
         }
-
     }
 }

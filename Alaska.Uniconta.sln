@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.7.34018.315
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Alaska.UnicontaScannerIntegration", "Alaska.UnicontaScannerIntegration\Alaska.UnicontaScannerIntegration.csproj", "{A2442559-C4DB-4915-9F1E-A13CEDDF7A8E}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Alaska.Library", "Alaska.Library\Alaska.Library.csproj", "{EDD75DB0-7D47-40E4-8952-5867FE7FCC99}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FolderWatchService", "FolderWatchService\FolderWatchService.csproj", "{68AB3F6E-4968-4E87-873A-0A9357A867A8}"
@@ -15,10 +13,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{A2442559-C4DB-4915-9F1E-A13CEDDF7A8E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A2442559-C4DB-4915-9F1E-A13CEDDF7A8E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A2442559-C4DB-4915-9F1E-A13CEDDF7A8E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A2442559-C4DB-4915-9F1E-A13CEDDF7A8E}.Release|Any CPU.Build.0 = Release|Any CPU
 		{EDD75DB0-7D47-40E4-8952-5867FE7FCC99}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{EDD75DB0-7D47-40E4-8952-5867FE7FCC99}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EDD75DB0-7D47-40E4-8952-5867FE7FCC99}.Release|Any CPU.ActiveCfg = Release|Any CPU

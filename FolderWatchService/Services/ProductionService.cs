@@ -25,6 +25,13 @@ namespace FolderWatchService.Services
             _errorHandler = errorHandler;
         }
 
+        /// <summary>
+        /// Used to create a list of production one at a time to determine which productions that has errors
+        /// </summary>
+        /// <param name="productions"></param>
+        /// <param name="scannerData"></param>
+        /// <param name="scannerFile"></param>
+        /// <returns></returns>
         public async Task<ErrorCodes> CreateProductions(List<ProductionOrderClient> productions, ScannerData[] scannerData, ScannerFile scannerFile)
         {
             int count = 0;
@@ -36,22 +43,35 @@ namespace FolderWatchService.Services
                 {
                     scannerData[count].Status = $"Error {insertResult}";
                     scannerFile.Status = "Error";
+                    // dont need to wait on the errorhandler here it will only slow down the process of creating the production
+                    // the task will run when there are available worker threads
                     var task = _errorHandler.WriteError(new UnicontaException("Error while trying to insert Production"), insertResult).ConfigureAwait(false);
+                    // It cant set the productionnumber if the production was'nt created therefor it continues
                     continue;
                 }
 
+                // Set the given productionnumber on the scannerData given by the api. 
                 scannerData[count].ProductionNumber = item.ProductionNumber.ToString();
             }
 
             return ErrorCodes.Succes;
         }
 
+        /// <summary>
+        /// Creates production lines for all productions given in the list <see cref="List{ProductionOrderClient}<"/>
+        /// </summary>
+        /// <param name="api"></param>
+        /// <param name="productions"></param>
+        /// <param name="scannerData"></param>
+        /// <param name="scannerFile"></param>
+        /// <returns></returns>
         public async Task CreateProductionLines(ProductionAPI api, List<ProductionOrderClient> productions, ScannerData[] scannerData, ScannerFile scannerFile)
         {
             int count = 0;
-
+            // Loops through the list of productions to create the needed lines for it
             foreach (ProductionOrderClient production in productions)
             {
+                // Uses the ProductionAPI to create the productionlines 
                 var creationResult = await api.CreateProductionLines(production, StorageRegister.Register);
                 if (creationResult != ErrorCodes.Succes)
                 {
@@ -64,6 +84,14 @@ namespace FolderWatchService.Services
             }
         }
 
+        /// <summary>
+        /// Report all productions as finished
+        /// </summary>
+        /// <param name="api"></param>
+        /// <param name="productions"></param>
+        /// <param name="scannerFile"></param>
+        /// <param name="scannerData"></param>
+        /// <returns></returns>
         public async Task<ErrorCodes> ReportAsFinished(ProductionAPI api, List<ProductionOrderClient> productions, ScannerFile scannerFile, ScannerData[] scannerData)
         {
             ErrorCodes lastError = ErrorCodes.Succes;

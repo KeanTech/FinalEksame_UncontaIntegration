@@ -19,10 +19,24 @@ namespace FolderWatchService.Core.Managers
         private readonly IEncryptionManager _encryptionManager;
         private readonly IFactory<IEntity> _factory;
         private readonly IErrorHandler _errorHandler;
+        /// <summary>
+        /// Gets the apps base directory.
+        /// </summary>
         private readonly string _baseDir = AppDomain.CurrentDomain.BaseDirectory;
+        /// <summary>
+        /// Using a const here because the config file never changes unless the project changes
+        /// and thats why theres a <see cref="nameof(FolderWatchService)"/> then i will throw a compiler error.
+        /// </summary>
         private const string _configFileName = nameof(FolderWatchService) + ".exe.config";
+        
+        /// <summary>
+        /// Used to store the settings from the config file user settings will be encrypted
+        /// </summary>
         private static Dictionary<string, string> _settings { get; set; }
         
+        /// <summary>
+        /// This property is used to see what error the ConfigManager has encountered last
+        /// </summary>
         public ConfigurationErrorsException LastError { get; set; }
 
         public ConfigManager(IEncryptionManager encryptionManager, IFactory<IEntity> factory, IErrorHandler errorHandler)
@@ -41,16 +55,23 @@ namespace FolderWatchService.Core.Managers
             }
         }
 
+        /// <summary>
+        /// Used to read the config file into memory by storing it in a dictionary
+        /// </summary>
         public void ReadConfigurations() 
         {
+            // Read the config file as a Configuration
             Configuration config = GetConfigFile();
+            // Get the keys from the appSettings section 
             var keys = config.AppSettings.Settings.AllKeys;
 
+            // Generate Key and IV in the encryptionManager
             _encryptionManager.GenerateKeyAndIV();
-           
+            
             if (_settings == null)
                 _settings = new Dictionary<string, string>();
 
+            // Encrypt the user parts of the config file
             EncryptConfigFile(config);
 
             // inserts all key and values from the appSettings section of the App.config
@@ -60,6 +81,7 @@ namespace FolderWatchService.Core.Managers
                 _settings.Add(key, config.AppSettings.Settings[key].Value);
             }
 
+            // Save the changes to the config file
             config.Save(ConfigurationSaveMode.Modified);
         }
 
@@ -123,14 +145,26 @@ namespace FolderWatchService.Core.Managers
             return loginInfo;
         }
 
+        /// <summary>
+        /// Used to encrypt the usersettings in the config file such as Username, Password and APIkey
+        /// </summary>
+        /// <param name="configuration"></param>
         private void EncryptConfigFile(Configuration configuration) 
         {
+            // Call the encryptionManager with the configuration 
+            // Gets a key value pair back with encrypted values
             var settings = _encryptionManager.EncryptUserSetting(configuration.AppSettings.Settings);
-
+            
+            // if the settings variable is null somthing went wrong 
             if (settings == null)
+                // Use configureAwait here because the service don't have to wait for the ErrorHandler
                 _errorHandler.WriteError(new Exception("Error while trying to encrypt value cannot be null")).ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// Used to decrypt the usersettings in the config file such as Username, Password and APIkey
+        /// </summary>
+        /// <param name="configuration"></param>
         private void DecryptConfigFile(Configuration configuration) 
         {
             var settings = _encryptionManager.DecryptUserSettings(configuration.AppSettings.Settings);
@@ -138,6 +172,10 @@ namespace FolderWatchService.Core.Managers
             if (settings == null)
                 _errorHandler.WriteError(new Exception("Error while trying to decrypt value cannot be null")).ConfigureAwait(false);
         }
+
+        /// <summary>
+        /// Is used to make sure that data in the ConfigManager gets removed 
+        /// </summary>
         public void Dispose()
         {
             _encryptionManager.Dispose();

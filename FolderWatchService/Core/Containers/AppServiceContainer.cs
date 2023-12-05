@@ -12,12 +12,14 @@ using System.Threading.Tasks;
 
 namespace FolderWatchService.Core.Containers
 {
+    // This class is used to configure the servce container
     public static class AppServiceContainer
     {
+        // This method is static so that it does'nt have to be instantiated in the program to get the container.
         public static IContainer Configure() 
         {
             ContainerBuilder builder = new ContainerBuilder();
-
+            // Here all dependencies is defined
             builder.RegisterType<ErrorHandler>().As<IErrorHandler>();
             builder.RegisterType<Factory>().As<IFactory<IEntity>>();
             builder.RegisterType<UnicontaFactory>().As<IUnicontaFactory>();
