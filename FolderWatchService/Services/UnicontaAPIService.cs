@@ -44,6 +44,11 @@ namespace FolderWatchService.Services
 
 
         #region Query methods
+        /// <summary>
+        /// Used to make a query to the Uniconta Api where T is a UnicontaBaseEntity
+        /// </summary>
+        /// <typeparam name="T">The object has to implement UnicontaBaseEntity</typeparam>
+        /// <returns>An array of the parsed generic type</returns>
         public async Task<T[]> Query<T>() where T : class, UnicontaBaseEntity, new()
         {
             T[] entity = await _api.Query<T>();
@@ -101,10 +106,10 @@ namespace FolderWatchService.Services
         /// <returns>If it fails to send some of the data it will return the error</returns>
         public async Task<ErrorCodes> HandleFolderCreatedEvent(string filePath, string fileName)
         {
-            // Uses the static factory to create ScannerFile object
-            //ScannerFile scannerFile = ScannerFile.Factory(_api.CompanyEntity, fileName, filePath, "Uploaded");
-
+            // Uses the factory to create ScannerFile object
             ScannerFile scannerFile = _factory.Create<ScannerFile>();
+            // Sets the master on the scannerFile 
+            // Used in Uniconta to set the foreign key in the db table
             scannerFile.SetMaster(_api.CompanyEntity);
             scannerFile.KeyName = fileName;
             scannerFile.FilePath = filePath;
@@ -112,19 +117,22 @@ namespace FolderWatchService.Services
             scannerFile.Status = "Initiated";
 
             // Insert the ScannerFile
-            var insertResult = await _api.Insert(scannerFile);
+            var insertResult = await Insert(scannerFile);
 
             // If the result was not successful it will write to errorlog and return the ErrorCode 
             if (insertResult != ErrorCodes.Succes)
             {
-                var task = _errorHandler.WriteError(new UnicontaException("Error while trying to insert record", new UnicontaException($"Error on Insert in {nameof(UnicontaAPIService.HandleFolderCreatedEvent)}")), insertResult).ConfigureAwait(false);
+                // Wait for the ErrorHandler to write to log
+                await _errorHandler.WriteError(new UnicontaException("Error while trying to insert record", new UnicontaException($"Error on Insert in {nameof(UnicontaAPIService.HandleFolderCreatedEvent)}")), insertResult);
                 return insertResult;
             }
 
             // Read all lines from file 
             var fileLines = File.ReadAllLines(filePath);
 
-            List<ScannerData> scannerDataList = new List<ScannerData>();
+            // Uses the factory to get a new empty list
+            List<ScannerData> scannerDataList = _factory.CreateListOf<ScannerData>();
+            
             // All items 
             var inventoryItems = await GetInventory();
 
@@ -137,12 +145,12 @@ namespace FolderWatchService.Services
 
             // Insert scannerdata if theres any entries in the list
             if (scannerDataList.Count > 0)
-                insertResult = await _api.Insert(scannerDataList);
+                insertResult = await Insert(scannerDataList);
 
             // if the insert fails write to log and return the error
             if (insertResult != ErrorCodes.Succes)
             {
-                var task = _errorHandler.WriteError(new UnicontaException("Error while trying to insert record lines", new UnicontaException($"Error on Insert in {nameof(UnicontaAPIService.HandleFolderCreatedEvent)}")), insertResult).ConfigureAwait(false);
+                await _errorHandler.WriteError(new UnicontaException("Error while trying to insert record lines", new UnicontaException($"Error on Insert in {nameof(HandleFolderCreatedEvent)}")), insertResult);
                 return insertResult;
             }
 
@@ -152,7 +160,7 @@ namespace FolderWatchService.Services
             // if the insert fails write to log and return the error
             if (insertResult != ErrorCodes.Succes)
             {
-                var task = _errorHandler.WriteError(new UnicontaException("Error while trying to insert attachment", new UnicontaException($"Error on Insert in {nameof(UnicontaAPIService.HandleFolderCreatedEvent)}")), insertResult).ConfigureAwait(false);
+                await _errorHandler.WriteError(new UnicontaException("Error while trying to insert attachment", new UnicontaException($"Error on Insert in {nameof(HandleFolderCreatedEvent)}")), insertResult);
                 return insertResult;
             }
 
@@ -177,17 +185,21 @@ namespace FolderWatchService.Services
             {
                 // splits the line into an array
                 string[] lineData = line.Split(';');
-                // Verify that the item exist in uniconta
+                // Verify that there is an item in Uniconta that has the same EAN-number 
+                /// <see cref="InvItemClientUser.EANPallet"/> is a custom field in Uniconta to contain EAN-number
                 var item = inventoryItems.FirstOrDefault(x => x.GetUserFieldString(nameof(InvItemClientUser.EANPallet)) == lineData[0]);
 
+                // Create a new instance of ScannerData through the UnicontaFactory
                 ScannerData scannerData = _factory.Create<ScannerData>();
                 scannerData.SetMaster(scannerFile);
                 // If the item does not exist give the line Status does not exist
                 if (item == null)
-                    scannerData.Status = $"Item: {lineData[0]} does not exist";
+                    scannerData.Status = $"Error: {lineData[0]} does not exist";
                 // Else set the item 
                 else
                 {
+                    // To create a production we need the item number aka item 
+                    // Cant use EAN-Number because it a userdefined field
                     scannerData.ItemNumber = item.Item;
                 }
 
@@ -198,7 +210,7 @@ namespace FolderWatchService.Services
                     scannerData.Quantity = qty;
                 // Else set status on line to Cannot be 0
                 else
-                    scannerData.Status = "Quantity cannot be 0";
+                    scannerData.Status = "Error: Quantity cannot be 0";
                 DateTime dateTime;
                 // Try to parse the date string to a DateTime
                 DateTime.TryParse(lineData[2], out dateTime);
@@ -232,7 +244,7 @@ namespace FolderWatchService.Services
         /// <returns></returns>
         public async Task<InvItemClient[]> GetInventory()
         {
-            var invItems = await _api.Query<InvItemClient>();
+            var invItems = await Query<InvItemClient>();
             return invItems;
         }
 
@@ -244,14 +256,17 @@ namespace FolderWatchService.Services
         /// <exception cref="ArgumentNullException"></exception>
         public async Task<ErrorCodes> Login(LoginInfo loginInfo)
         {
+            // Get a new Uniconta connection target live (production) 
             UnicontaConnection connection = new UnicontaConnection(APITarget.Live);
+            // Create a session with the connection
             Session session = new Session(connection);
-            ErrorCodes loginResponse = ErrorCodes.Succes;
-            UnicontaException exception = new UnicontaException("");
 
+            ErrorCodes loginResponse = ErrorCodes.Succes;
+            
             try
             {
                 // Get access to Uniconta Api through the session
+                /// login with the information parsed in <see cref="LoginInfo"/>
                 loginResponse = await session.LoginAsync(
 
                     LoginId: loginInfo.Username,
@@ -272,6 +287,7 @@ namespace FolderWatchService.Services
                     _errorHandler.ShowErrorMessage($"Uniconta login failed cant start service!\nError Message: {loginResponse}");
                     await _errorHandler.WriteError(new UnicontaException($"Uniconta login failed cant start service"), loginResponse);
                     // Exit with exitcode: ERROR_SERVICE_LOGON_FAILED(1069) https://learn.microsoft.com/en-us/windows/win32/debug/system-error-codes--1000-1299-
+                    // To make sure that the service terminates if login fails
                     Environment.Exit(1069);
                 }
             }
@@ -287,7 +303,6 @@ namespace FolderWatchService.Services
 
             // Sets the internal api
             _api = new CrudAPI(session, companyEntity);
-
 
             return loginResponse;
         }
@@ -310,18 +325,21 @@ namespace FolderWatchService.Services
         private async Task<ErrorCodes> CreateAttachmentFor<T>(T master, string fullPath, string fileName) where T : class, UnicontaBaseEntity
         {
             UserDocsClient userDocsClient = new UserDocsClient();
-            userDocsClient.SetMaster(master);
-            // Reads the file as bytes
-            userDocsClient._Data = File.ReadAllBytes(fullPath);
             // Sets the extension.
             if (fullPath.GetFileExtention() == "txt")
                 userDocsClient.DocumentType = FileextensionsTypes.TXT;
+            else
+                return ErrorCodes.IllegalFiletype;
+
+            userDocsClient.SetMaster(master);
+            // Reads the file as bytes
+            userDocsClient._Data = File.ReadAllBytes(fullPath);
 
             userDocsClient.Created = DateTime.Now;
             userDocsClient.Text = fileName;
 
             // Wait for response and return the result
-            return await _api.Insert(userDocsClient);
+            return await Insert(userDocsClient);
         }
     }
 }

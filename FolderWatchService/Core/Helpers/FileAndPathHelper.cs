@@ -33,8 +33,8 @@ namespace FolderWatchService.Core.Helpers
             if (Directory.Exists(folder2) == false)
                 Directory.CreateDirectory(folder2);
 
-            if (Directory.Exists(folder2) == false)
-                Directory.CreateDirectory(folder2);
+            if (Directory.Exists(folder3) == false)
+                Directory.CreateDirectory(folder3);
         }
     }
 }

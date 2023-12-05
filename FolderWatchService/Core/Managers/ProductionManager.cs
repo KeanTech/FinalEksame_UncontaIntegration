@@ -40,18 +40,25 @@ namespace FolderWatchService.Core.Managers
                 return ErrorCodes.NoLinesFound;
             }
 
+            /// Gets the lines created from file
             var scannerData = await _unicontaAPIService.Query<ScannerData>(scannerFile);
-            var Items = await _unicontaAPIService.Query<InvItemClient>();
+            // Gets all items to validate filelines
+            var Items = await _unicontaAPIService.GetInventory();
+            // Gets the production groups used to set on the production
             var productionGroups = await _unicontaAPIService.Query<ProductionOrderGroupClient>();
+            // Look for the specifik production group used by service/scanner
             var productionGroup = productionGroups.FirstOrDefault(x => x.KeyName == _productionGroupName);
+            // If the group was not created in Uniconta 
             if (productionGroup == null)
             {
+                // Create a new one
                 ProductionOrderGroupClient groupClient = _factory.Create<ProductionOrderGroupClient>();
                 groupClient.KeyStr = "Import From Scanner";
                 groupClient.Name = _productionGroupName;
                 apiResult = await _unicontaAPIService.Insert(groupClient);
             }
 
+            // Use the factory to make a new empty list to hold the productions
             List<ProductionOrderClient> productions = _factory.CreateListOf<ProductionOrderClient>();
 
             // creates a new production foreach line in the scannerData array
