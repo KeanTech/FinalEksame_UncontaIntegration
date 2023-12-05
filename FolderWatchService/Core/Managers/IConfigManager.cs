@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace FolderWatchService.Core.Managers
 {
-    public interface IConfigManager
+    public interface IConfigManager : IDisposable
     {
         /// <summary>
         /// Used to get access to the App.config parse the name of the key

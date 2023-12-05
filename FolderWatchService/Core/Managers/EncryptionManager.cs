@@ -7,7 +7,7 @@ using System.Security.Cryptography;
 
 namespace FolderWatchService.Core.Managers
 {
-    public class EncryptionManager : IDisposable, IEncryptionManager
+    public class EncryptionManager : IEncryptionManager
     {
         private readonly string[] _keys = { ConfigKey.ApiKey.ToString(), ConfigKey.Username.ToString(), ConfigKey.Password.ToString() };
         private readonly KeyGenerator _keyGenerator;

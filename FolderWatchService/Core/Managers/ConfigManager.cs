@@ -14,7 +14,7 @@ namespace FolderWatchService.Core.Managers
     /// <summary>
     /// This class is used to access the config file
     /// </summary>
-    public class ConfigManager : IConfigManager, IDisposable
+    public class ConfigManager : IConfigManager
     {
         private readonly IEncryptionManager _encryptionManager;
         private readonly IFactory<IEntity> _factory;

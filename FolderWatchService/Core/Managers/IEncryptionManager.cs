@@ -1,8 +1,9 @@
-﻿using System.Configuration;
+﻿using System;
+using System.Configuration;
 
 namespace FolderWatchService.Core.Managers
 {
-    public interface IEncryptionManager
+    public interface IEncryptionManager : IDisposable
     {
         string DecryptString(string input);
         KeyValueConfigurationCollection DecryptUserSettings(KeyValueConfigurationCollection settingsCollection);
