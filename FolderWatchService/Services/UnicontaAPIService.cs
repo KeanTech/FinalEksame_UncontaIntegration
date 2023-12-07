@@ -183,8 +183,13 @@ namespace FolderWatchService.Services
         {
             foreach (var line in fileLines)
             {
+                // If the string is empty theres no data to read.
+                if (string.IsNullOrEmpty(line))
+                    continue;
+
                 // splits the line into an array
                 string[] lineData = line.Split(';');
+
                 // Verify that there is an item in Uniconta that has the same EAN-number 
                 /// <see cref="InvItemClientUser.EANPallet"/> is a custom field in Uniconta to contain EAN-number
                 var item = inventoryItems.FirstOrDefault(x => x.GetUserFieldString(nameof(InvItemClientUser.EANPallet)) == lineData[0]);

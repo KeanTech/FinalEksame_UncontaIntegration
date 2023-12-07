@@ -118,6 +118,10 @@ namespace FolderWatchService.Services
                         var task = _errorHandler.WriteError(new UnicontaException("Error while reporting as finished", new UnicontaException($"Failed post production: {production.ProductionNumber}")), result.Err);
                         continue;
                     }
+                    else
+                    {
+                        relatedScannerData.Status = "Done";
+                    }
                 }
                 catch (Exception ex)
                 {
