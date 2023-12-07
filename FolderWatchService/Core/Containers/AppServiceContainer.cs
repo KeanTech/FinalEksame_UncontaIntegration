@@ -24,7 +24,7 @@ namespace FolderWatchService.Core.Containers
             builder.RegisterType<Factory>().As<IFactory<IEntity>>();
             builder.RegisterType<UnicontaFactory>().As<IUnicontaFactory>();
             builder.RegisterType<KeyGenerator>().AsSelf().SingleInstance();
-            builder.RegisterType<EncryptionManager>();
+            builder.RegisterType<EncryptionManager>().As<IEncryptionManager>();
             builder.RegisterType<ConfigManager>().As<IConfigManager>();
             // Register as a singleton
             builder.RegisterType<UnicontaAPIService>().As<IUnicontaAPIService>().SingleInstance();
