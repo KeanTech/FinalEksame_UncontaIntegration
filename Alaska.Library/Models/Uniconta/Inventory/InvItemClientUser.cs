@@ -1,13 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel.DataAnnotations;
 using Uniconta.ClientTools.DataModel;
 
 namespace Alaska.Library.Models.Uniconta.Inventory
 {
+    /// <summary>
+    /// This class is used the get the userdefined fields 
+    /// </summary>
     public class InvItemClientUser : InvItemClient
     {
         [Display(Name = "Kolli pr.lag")]

@@ -29,27 +29,6 @@ namespace Alaska.Library.Core.Factories
         public T CreateUnicontaObject<T>() where T : UnicontaBaseEntity, new()
         {
             return new T();
-        }
-
-        public UnicontaBaseEntity CreateUnicontaObjectWithMaster(UnicontaBaseEntity master) 
-        {
-            switch (master) 
-            {
-                case Company company:
-                    ScannerFile file = new ScannerFile();
-                    file.SetMaster(master);
-                    return file;
-            
-                case ScannerFile scannerFile: 
-                    ScannerData scannerData = new ScannerData();
-                    scannerData.SetMaster(master);
-
-                    return scannerData;
-
-                    default: return null;
-            }
-        }
-
-        
+        } 
     }
 }

@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Alaska.Library.Core.Enums
+﻿namespace Alaska.Library.Core.Enums
 {
+    /// <summary>
+    /// This enum is used the get the keyname
+    /// </summary>
     public enum ConfigKey
     {
         ApiKey,

@@ -9,6 +9,9 @@ using Uniconta.DataModel;
 
 namespace Alaska.Library.Models.Uniconta.Userdefined
 {
+    /// <summary>
+    /// This class represents db model in Uniconta
+    /// </summary>
     public class ScannerFile : TableDataWithKey
     {
         public override int UserTableId { get { return 81790; } }
